@@ -1,0 +1,116 @@
+<html>
+	<head></head>
+	<script src="cloudBigDataAPI.js"></script>
+	<script>
+		var client = new CBD.Auth('CLIENT_ID', 'CLIENT_API_KEY');
+		
+		var mmm = new client.MapReduce({
+			data : {
+				tm1 : function(currentLeft, currentRight){
+					return 'http://cloud-bigdata.com/BigDataStorage/tm/tm1/'+currentLeft+'/'+currentRight+'/?attr=vd';
+				},
+				tm2 : function(currentLeft, currentRight){
+					return 'http://cloud-bigdata.com/BigDataStorage/tm/tm2/'+currentLeft+'/'+currentRight+'/?attr=vd';
+				},
+				tm3 : function(currentLeft, currentRight){
+					return 'http://cloud-bigdata.com/BigDataStorage/tm/tm3/'+currentLeft+'/'+currentRight+'/?attr=vd';
+				}
+			},
+			libs : [
+				'http://localhost:8080/CloudBigDataAPI/libTM.js',
+			],
+			limit : {
+				left : 1356998400000,
+				right : 1356998400000 + 1000*60*60*24 * 5,
+				step : 1000*60*60*24 * 0.25
+			},
+			split : function(leftLimit, rightLimit, step){
+				var jobs = [];
+				while(rightLimit > leftLimit){
+					var currentRightLimit = leftLimit + step
+					if(currentRightLimit > rightLimit){
+						currentRightLimit = rightLimit
+					}
+					jobs.push([leftLimit, currentRightLimit]);					
+					leftLimit = currentRightLimit;
+				}
+				return jobs;
+			},
+			map : function (key, value) {				
+				var results = [];
+				
+				for(var i in value.tm1.plotTelemetry){
+					var tm1 = new Tm(value.tm1.plotTelemetry[i], key);
+					var tm2 = tm1.getTmClosest(value.tm2.plotTelemetry);
+					var tm3 = tm1.getTmClosest(value.tm3.plotTelemetry);
+					var tmDer = tm1.getFloatValue() - (2 * tm2.getFloatValue() + 3 * tm3.getFloatValue()) / 5;
+					var currentKey = tm1.getTime() - tm1.getTime() % (1000*60*60*24);
+					
+					if(!results[currentKey]){
+						results[currentKey] = {
+							key : currentKey,
+							value : {
+								min : Number.MAX_VALUE,
+								max : -Number.MAX_VALUE
+							}
+						};
+					}
+					if (tmDer > results[currentKey].value.max){
+						results[currentKey].value.max = tmDer;
+					}
+					if (tmDer < results[currentKey].value.min){
+						results[currentKey].value.min = tmDer;
+					}
+				}
+				var response = [];
+				for(var key in results){
+					response.push(results[key]);
+				}
+				return response;
+			},
+			reduce : function(intermediateKey, values) {
+				var min = Number.MAX_VALUE;
+				var max = -Number.MAX_VALUE;
+				for (var i=0; i<values.length; i++) {
+					if (values[i].max > max){
+						max = values[i].max;
+					}
+					if (values[i].min < min){
+						min = values[i].min;
+					}
+				}
+				return {key: intermediateKey, value:{min : min, max : max}};
+			}
+		});
+		
+		mmm.start();
+		
+		mmm.addListener('progress', function(event){
+			var totalIterative = event.perf.download + event.perf.map;
+			var porcent = event.porcent.toFixed(0)+'%';
+			var download = (event.perf.download/1000).toFixed(0)+'s';
+			var downloadPorcent = (event.perf.download/totalIterative*100).toFixed(0)+'%';
+			var mapPorcent = (event.perf.map/totalIterative*100).toFixed(0)+'%';
+			var map = (event.perf.map/1000).toFixed(0)+'s';
+			var time = (event.perf.time/1000).toFixed(0)+'s';
+			var perfMap = (event.perf.map/event.perf.time).toFixed(1)+'x';
+			var perfTotal = (totalIterative / event.perf.time).toFixed(1)+'x';
+			var iterative = ((event.perf.download+event.perf.map) / 1000).toFixed(0)+'s';
+			console.log('INFO : ['+porcent+' : '+time+',\t'+perfTotal+',\t'+perfMap+']\t(iterative) ->\tdownload : '+download+'\t('+downloadPorcent+')\t+ map : '+map+'\t('+mapPorcent+') == '+iterative);
+		});
+		
+		mmm.addListener('finish', function(event){
+			console.log('___________________________________________________ END _________________________________________________________');
+			for(var i in event.data){
+				var id = event.data[i].key;
+				var min = event.data[i].value.min.toFixed(2);
+				var max = event.data[i].value.max.toFixed(2);
+				console.log(id+' : {\tmin : '+min+' \t, max : '+max+'\t}');
+			}
+		});
+						
+	</script>
+	<body>
+
+	</body>
+</html>

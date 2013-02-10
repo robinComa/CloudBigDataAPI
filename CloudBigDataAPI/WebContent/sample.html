@@ -1,19 +1,23 @@
 <html>
-	<head></head>
-	<script src="cloudBigDataAPI.js"></script>
+	<head>
+		<title>Map Reduce Sample</title>
+	</head>
+	<script id="CLOUD-BIG-DATA-API" src="cloudBigDataAPI.js" data-client-id="CLIENT_ID" data-api-key="CLIENT_API_KEY"></script>
 	<script>
-		var client = new CBD.Auth('CLIENT_ID', 'CLIENT_API_KEY');
-		
+		var client = new CBD.Auth();
 		var mmm = new client.MapReduce({
 			data : {
 				tm1 : function(currentLeft, currentRight){
-					return 'http://cloud-bigdata.com/BigDataStorage/tm/tm1/'+currentLeft+'/'+currentRight+'/?attr=vd';
+					return new JsonpData('http://cloud-bigdata.com/BigDataStorage/tm/tm1/'+currentLeft+'/'+currentRight+'/?attr=vd');
 				},
 				tm2 : function(currentLeft, currentRight){
-					return 'http://cloud-bigdata.com/BigDataStorage/tm/tm2/'+currentLeft+'/'+currentRight+'/?attr=vd';
+					return new JsonpData('http://cloud-bigdata.com/BigDataStorage/tm/tm2/'+currentLeft+'/'+currentRight+'/?attr=vd');
 				},
 				tm3 : function(currentLeft, currentRight){
-					return 'http://cloud-bigdata.com/BigDataStorage/tm/tm3/'+currentLeft+'/'+currentRight+'/?attr=vd';
+					return new JsonpData('http://cloud-bigdata.com/BigDataStorage/tm/tm3/'+currentLeft+'/'+currentRight+'/?attr=vd');
+				},
+				config : function(currentLeft, currentRight){
+					return {sample_attribute : 'A sample of non-jsonp data'};
 				}
 			},
 			libs : [
@@ -36,9 +40,9 @@
 				}
 				return jobs;
 			},
-			map : function (key, value) {				
+			map : function (key, value) {	
 				var results = [];
-				
+
 				for(var i in value.tm1.plotTelemetry){
 					var tm1 = new Tm(value.tm1.plotTelemetry[i], key);
 					var tm2 = tm1.getTmClosest(value.tm2.plotTelemetry);

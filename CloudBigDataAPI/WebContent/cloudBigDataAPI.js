@@ -1,9 +1,11 @@
 CBD = {
 	
-	Auth : function(clientID, apiKEY){
-		if(clientID && apiKEY){		
-			CBD.clientID = clientID,
-			CBD.apiKEY = apiKEY;
+	Auth : function(){
+		var clientID = document.getElementById('CLOUD-BIG-DATA-API').getAttribute("data-client-id");
+		var apiKEY = document.getElementById('CLOUD-BIG-DATA-API').getAttribute("data-api-key");
+		if(clientID && apiKEY){
+			//TODO Server auth
+			CBD.token = 'My new unique token';
 		}else{
 			throw 'Auth failed!';
 		}
@@ -46,24 +48,32 @@ CBD = {
 		};
 		/** END EVENTS */
 		
-		function createJobs(){
+		(function createJobs(){
 			var jobsLimits = args.split(args.limit.left, args.limit.right, args.limit.step);
 			for(var i in jobsLimits){
-				var value = {};
-				for(key in args.data){
-					value[key] = args.data[key](jobsLimits[i][0],jobsLimits[i][1]);
-				}
 				jobs.push({
+					data : args.data,
 					map : args.map,
-					args : [jobsLimits[i][0],value,args.libs]
+					key : jobsLimits[i][0],
+					libs : args.libs,
+					limit : {
+						left : jobsLimits[i][0],
+						right : jobsLimits[i][1]
+					}
 				});	
 			}
-		}
-		
-		createJobs();
-	
-		function createScriptURL(mapper){
-			var oblob = new Blob(['var map = '+mapper+";\nimportScripts('http://localhost:8080/CloudBigDataAPI/worker.js');"], { "type" : "text\/javascript" });
+		}());
+			
+		/** Transform [data functions + map functions + the worker skeleton] to a JS single script URL */
+		function createScriptURL(dataFn, mapper){
+			var jsonStr = '';
+			for (property in dataFn) {
+				jsonStr += '\t'+property + ': ' + dataFn[property]+',\n';
+			}
+			var data = 'var dataFn = {\n'+jsonStr+'\n};';
+			var mapFn = 'var map = '+mapper+';';
+			var workerBase = "importScripts('http://localhost:8080/CloudBigDataAPI/worker.skeleton.js');";
+			var oblob = new Blob([[data,mapFn,workerBase].join('\n')], { "type" : "text\/javascript" });
 			return URL.createObjectURL(oblob);
 		}
 		
@@ -89,7 +99,7 @@ CBD = {
 				});
 				if(jobs.length == jobFinish){
 					function groupBy(list) {
-						var ret = {};
+						var ret = [];
 						for (var i in list) {
 							var key = list[i].key;
 							var value = list[i].value;
@@ -111,10 +121,10 @@ CBD = {
 			
 			var i = 0;
 			
-			function doJobs(){
+			(function doJobs(){
 				while(i < jobs.length && nbWorkers < MAX_WORKERS){
 					nbWorkers++;
-					var worker = new Worker(createScriptURL(jobs[i].map));
+					var worker = new Worker(createScriptURL(jobs[i].data, jobs[i].map));
 					worker.addEventListener('message', function(event){
 						if(event.data.type == 'log'){
 							console.log(event.data.log);
@@ -127,13 +137,15 @@ CBD = {
 							}
 						}
 					}, false);
-					worker.postMessage(jobs[i].args);	
+					worker.postMessage({
+						key : jobs[i].key,
+						libs : jobs[i].libs,
+						limit : jobs[i].limit
+					});	
 					i++;
 				}
-			}
-			
-			doJobs();
-			
+			}());
+						
 			/** END LISTEN TO SERVER RESULTS */			
 		};
 		

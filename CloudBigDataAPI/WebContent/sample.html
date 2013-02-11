@@ -2,8 +2,8 @@
 	<head>
 		<title>Map Reduce Sample</title>
 	</head>
-	<script id="CLOUD-BIG-DATA-API" src="cloudBigDataAPI.js" data-client-id="CLIENT_ID" data-api-key="CLIENT_API_KEY"></script>
-	<script>
+	<script type="text/javascript" src="cloudBigDataAPI.js" id="CBD-ROOT" data-client-id="CLIENT_ID" data-api-key="CLIENT_API_KEY" data-accept-jobs="true" data-max-threads="10"></script>
+	<script type="text/javascript">
 		var client = new CBD.Auth();
 		var mmm = new client.MapReduce({
 			data : {
@@ -25,7 +25,7 @@
 			],
 			limit : {
 				left : 1356998400000,
-				right : 1356998400000 + 1000*60*60*24 * 5,
+				right : 1356998400000 + 1000*60*60*24 * 7,
 				step : 1000*60*60*24 * 0.25
 			},
 			split : function(leftLimit, rightLimit, step){
@@ -104,13 +104,14 @@
 		});
 		
 		mmm.addListener('finish', function(event){
-			console.log('___________________________________________________ END _________________________________________________________');
+			var res = '';
 			for(var i in event.data){
 				var id = event.data[i].key;
 				var min = event.data[i].value.min.toFixed(2);
 				var max = event.data[i].value.max.toFixed(2);
-				console.log(id+' : {\tmin : '+min+' \t, max : '+max+'\t}');
+				res += (new Date(parseInt(id))+' : {min : '+min+', max : '+max+'}<br>');
 			}
+			document.write(res);
 		});
 						
 	</script>

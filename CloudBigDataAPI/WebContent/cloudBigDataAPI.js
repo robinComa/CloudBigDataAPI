@@ -1,11 +1,16 @@
 CBD = {
+		
+	root : document.getElementById('CBD-ROOT'),
 	
 	Auth : function(){
-		var clientID = document.getElementById('CLOUD-BIG-DATA-API').getAttribute("data-client-id");
-		var apiKEY = document.getElementById('CLOUD-BIG-DATA-API').getAttribute("data-api-key");
+		var clientID = CBD.root.getAttribute('data-client-id');
+		var apiKEY = CBD.root.getAttribute('data-api-key');
 		if(clientID && apiKEY){
 			//TODO Server auth
 			CBD.token = 'My new unique token';
+			if(CBD.root.getAttributes('data-accept-jobs')){
+				//TODO receive / do jobs
+			}
 		}else{
 			throw 'Auth failed!';
 		}
@@ -80,7 +85,7 @@ CBD = {
 		
 		this.start = function(){
 			
-			var MAX_WORKERS = 10;
+			var MAX_WORKERS = CBD.root.getAttribute("data-max-threads");
 			var nbWorkers = 0;
 			
 			/** PUSH REQUEST ON SERVER */

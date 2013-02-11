@@ -1,8 +1,8 @@
 /** Public Classes */
 var console = {
-	log : function(obj){
-		self.postMessage({type : 'log',log : obj});
-	}
+		log : function(obj){
+			self.postMessage({type : 'log',log : obj});
+		}
 };
 var JsonpData = function(url){
 	var obj = {};
@@ -17,20 +17,20 @@ var JsonpData = function(url){
 self.addEventListener('message', function(e) {
 	var start = new Date();
 	var value = {};
-	
+
 	//Input Data
 	for(key in dataFn){
 		value[key] = dataFn[key](e.data.limit.left, e.data.limit.right);
 	}
-	
+
 	//Libraries
 	for(var i in e.data.libs){
 		importScripts(e.data.libs[i]);
 	}
-	
+
 	var downloadTime = (new Date()) - start;
 	start = new Date();
-	
+
 	self.postMessage({
 		results: map(e.data.key,value),
 		time : {

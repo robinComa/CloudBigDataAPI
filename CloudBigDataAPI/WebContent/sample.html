@@ -101,17 +101,18 @@
 			var perfTotal = (totalIterative / event.perf.time).toFixed(1)+'x';
 			var iterative = ((event.perf.download+event.perf.map) / 1000).toFixed(0)+'s';
 			console.log('INFO : ['+porcent+' : '+time+',\t'+perfTotal+',\t'+perfMap+']\t(iterative) ->\tdownload : '+download+'\t('+downloadPorcent+')\t+ map : '+map+'\t('+mapPorcent+') == '+iterative);
+			document.body.innerHTML = porcent;
 		});
 		
 		mmm.addListener('finish', function(event){
-			var res = '';
+			var res = '<pre>';
 			for(var i in event.data){
 				var id = event.data[i].key;
 				var min = event.data[i].value.min.toFixed(2);
 				var max = event.data[i].value.max.toFixed(2);
-				res += (new Date(parseInt(id))+' : {min : '+min+', max : '+max+'}<br>');
+				res += (new Date(parseInt(id))+'\t: {\tmin : '+min+',\tmax : '+max+'\t}\n');
 			}
-			document.write(res);
+			document.body.innerHTML = res+'</pre>';
 		});
 						
 	</script>
